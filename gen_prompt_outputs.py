@@ -45,6 +45,31 @@ def analyze_comment_with_prompt(comment, prompt):
     Tags: {TAGS}
     Sentiments: [Positive, Negative, Neutral]
 
+    Here are some examples:
+    Comment: "This site is VERY CONFUSING!  We are not IT tech savvy!  Make it simple for us to send and receive messages from our Medical Providers!"
+    Tag: Ease of use
+    Sentiment: Negative
+
+    Comment: "website easy to use and I can usually find what I need, if not someone is always available to help"
+    Tag: Findability/Nav
+    Sentiment: Positive
+
+    Comment: "I was able to get a message to my primary care doctor and that was my goal"
+    Tag: Answered Question
+    Sentiment: Neutral
+
+    Comment: "I came to reorder medication but didn't get an email or popup box telling me that it had been received or the date it would be shipped."
+    Tag: Findability/Nav
+    Sentiment: Neutral
+
+    Comment: "It is usually easier to go through the website versus making a phone call."
+    Tag: Ease of use
+    Sentiment: Neutral
+
+    Please consider the following:
+    1. Use the tag that most accurately reflects the topic of the comment.
+    2. If multiple tags seem applicable, choose the one that best captures the main idea.
+
     Output the result in this format:
     Tag: Selected Tag
     Sentiment: Selected Sentiment
@@ -54,7 +79,7 @@ def analyze_comment_with_prompt(comment, prompt):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",  # Or "gpt-4" if available
             messages=[
-                {"role": "system", "content": "You are an expert in text classification and user experience design for the VA.gov website. You are tasked with analyzing open-text feedback to pinpoint potential UX issues. "},
+                {"role": "system", "content": "You are an expert in text classification and user experience design for the VA.gov website. You are tasked with analyzing open-text feedback to pinpoint potential UX issues."},
                 {"role": "user", "content": full_prompt}
             ],
             temperature=0.0
