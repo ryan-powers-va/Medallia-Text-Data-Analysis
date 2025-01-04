@@ -43,11 +43,12 @@ def analyze_comment(comment):
     """
     try:
         response = client.chat.completions.create(
-            model="gpt-4",  # Or "gpt-4" if available
+            model="gpt-3.5-turbo",  # Or "gpt-4" if available
             messages=[
-                {"role": "system", "content": "You are an expert in text classification."},
+                {"role": "system", "content": "You are an expert in text classification and user experience design for the VA.gov website. You are tasked with analyzing open-text feedback to pinpoint potential UX issues."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            temperature=0.0
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
