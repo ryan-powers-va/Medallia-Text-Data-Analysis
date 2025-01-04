@@ -2,6 +2,7 @@ import openai
 import pandas as pd
 import os
 from dotenv import load_dotenv
+from utils import TAGS
 
 load_dotenv(dotenv_path=r'C:/Users/OITCOPowerR/OneDrive - Department of Veterans Affairs/Documents/Medallia Text Data Analysis/.env')
 
@@ -16,25 +17,19 @@ client = openai.OpenAI(
 )
 
 # File path for your Excel file
-file_path = r"C:/Users/OITCOPowerR/OneDrive - Department of Veterans Affairs/Documents/Medallia Text Data Analysis/SecureMessages_Comments.xlsx"
+file_path = r"C:/Users/OITCOPowerR/OneDrive - Department of Veterans Affairs/Documents/Medallia Text Data Analysis/Comments_QuickTest.xlsx"
 
 # Load the data from Excel (ensure the Excel file has a column named "Comment")
 df = pd.read_excel(file_path)
 
 # Predefined tags
-tags = [
-    "Triage Group", "Unrelated to VA.gov", "Error", "Integration", "Ease of use",
-    "Benefits", "Feature Request", "Supplies", "Other", "Mixed Status", "Can't Reply",
-    "Early pop up", "Missing Rx", "Findability/ Navigation", "Sign in or access",
-    "Content", "Sort", "Answered Question", "Can't Refill", "Page Length"
-]
 
 # Function to analyze a single comment
 def analyze_comment(comment):
     prompt = f"""
     Classify the following comment into one of the predefined tags and determine its sentiment.
     Comment: "{comment}"
-    Tags: {tags}
+    Tags: {TAGS}
     Sentiments: [Positive, Negative, Neutral]  # Removed quotes for cleaner formatting
 
     Output the result in this format:
@@ -45,7 +40,7 @@ def analyze_comment(comment):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",  # Or "gpt-4" if available
             messages=[
-                {"role": "system", "content": "You are an expert in text classification and user experience design for the VA.gov website. You are tasked with analyzing open-text feedback to pinpoint potential UX issues."},
+                {"role": "system", "content": "You are an expert in text classification and user experience design for the VA.gov website. You are tasked with analyzing open-text feedback to pinpoint potential UX issues. "},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.0
