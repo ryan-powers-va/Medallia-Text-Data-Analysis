@@ -69,6 +69,7 @@ def analyze_comment_with_prompt(comment, prompt):
     Please consider the following:
     1. Use the tag that most accurately reflects the topic of the comment.
     2. If multiple tags seem applicable, choose the one that best captures the main idea.
+    3. If a comment is neutral or unclear, classify it as "Neutral" sentiment.
 
     Output the result in this format:
     Tag: Selected Tag
