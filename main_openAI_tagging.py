@@ -1,5 +1,4 @@
 from utils import TAGS
-
 import openai
 import pandas as pd
 import os
@@ -26,6 +25,7 @@ prompts_file = r"prompts.xlsx"
 output_file = r"output.xlsx"
 cache_directory = r"cache"
 
+# Caching function to skip API calls if no prompt changes have occurred. 
 def get_cache_file_path(comment, prompt):
     key = f"{comment}_{prompt}"
     hashed_key = sha256(key.encode("utf-8")).hexdigest()
@@ -34,7 +34,7 @@ def get_cache_file_path(comment, prompt):
 # Function to analyze a single comment with a specific prompt
 def analyze_comment_with_prompt(comment, prompt):
     cache_file_path = get_cache_file_path(comment, prompt)
-    # If the response file already exists, load the cached response
+    # If the response file already exists, load the cached response and skip the API call. 
     if os.path.exists(cache_file_path):
         with open(cache_file_path, "r") as f:
             cached_response = json.load(f)
@@ -77,12 +77,17 @@ def analyze_comment_with_prompt(comment, prompt):
     """
     try:
         print("Calling OpenAI...")
+        # Model selection. 
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Or "gpt-4" if available
+            model="gpt-3.5-turbo",  # Or "gpt-4" - but 4 is more expensive**
+
+            # Establishes role and context for the system and the user.
             messages=[
-                {"role": "system", "content": "You are an expert in text classification and user experience design for the VA.gov website. You are tasked with analyzing open-text feedback to pinpoint potential UX issues."},
+                {"role": "system", "content": "You are an expert in text classification and user experience design for the VA.gov website and benefits ecosystem. You are tasked with analyzing open-text feedback to pinpoint potential UX issues."},
                 {"role": "user", "content": full_prompt}
             ],
+            
+            # Controls randomness, ensuring determinstic outputs accross results.
             temperature=0.0
         )
         output = response.choices[0].message.content.strip()
@@ -106,6 +111,7 @@ def analyze_comment_with_prompt(comment, prompt):
 
 def generate_output():
 
+    # Ensures cache directory exists. If not, makes one. 
     os.makedirs(cache_directory, exist_ok=True)
 
     # Load human-labeled feedback and prompts
