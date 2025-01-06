@@ -61,7 +61,7 @@ def get_cache_file_path(comment, task):
     return os.path.join(cache_directory, f"{hashed_key}.json")
 
 # Analyze tag for a comment using the openAI API. 
-def analyze_tag(comment, human_tag):
+def analyze_tag(comment, human_tag, prompt):
     task = "tag"
     cache_file_path = get_cache_file_path(comment, task)
 
@@ -71,16 +71,12 @@ def analyze_tag(comment, human_tag):
             return cached_response.get("tag"), cached_response.get("confidence")
 
     prompt = f"""
-    Classify the topic of the following comment:
+    {prompt}
     Comment: "{comment}"
     Tags: {TAGS}
 
-    Instructions:
-    - Select the tag that most accurately describes the main topic.
-    - If no tag fits, classify as "Other".
-
     Output format:
-    Tag: [Selected Tag]
+    Tag: Selected Tag
     """
     try:
         print("Calling OpenAI for comment tagging...")
@@ -112,7 +108,7 @@ def analyze_tag(comment, human_tag):
         return "[Error]", 0.0  # Explicitly return "[Error]" as a placeholder tag and a confidence of 0.0
 
 # Analyze sentiment for a comment using the openAI API. 
-def analyze_sentiment(comment, human_sentiment):
+def analyze_sentiment(comment, human_sentiment, prompt):
     task = "sentiment"
     cache_file_path = get_cache_file_path(comment, task)
 
@@ -122,17 +118,11 @@ def analyze_sentiment(comment, human_sentiment):
             return cached_response.get("sentiment"), cached_response.get("confidence")
 
     prompt = f"""
-    Determine the sentiment of the following comment:
+    {prompt}
     Comment: "{comment}"
-    Sentiments: [Positive, Negative, Neutral]
-
-    Instructions:
-    - Base the sentiment on the tone and context of the comment.
-    - Neutral sentiment applies to factual statements or unclear tone.
 
     Output format:
-    Sentiment: [Selected Sentiment]
-    Confidence: [Log probability of the selected sentiment]
+    Sentiment: Selected Sentiment
     """
     try:
         print("Calling OpenAI for sentiment analysis...")
@@ -174,9 +164,13 @@ def generate_output():
     # Ensure necessary columns are present in the feedback file
     if not {"Comment", "Human Tag", "Human Sentiment"}.issubset(feedback_df.columns):
         raise ValueError("Feedback file must contain 'Comment', 'Human Tag', and 'Human Sentiment' columns.")
+    
+    if not {"Prompt Type", "Prompt"}.issubset(prompts_df.columns):
+        raise ValueError("Prompts file must contain 'Prompt Type' and 'Prompt' columns.")
 
     # Extract the prompts into a list
-    prompts = prompts_df["Prompt"].tolist()
+    tagging_prompts = prompts_df[prompts_df["Prompt Type"] == "Tagging"]["Prompt"].tolist()
+    sentiment_prompts = prompts_df[prompts_df["Prompt Type"] == "Sentiment"]["Prompt"].tolist()
 
     # Initialize results list
     results = []
@@ -194,27 +188,27 @@ def generate_output():
             "Human Sentiment": human_sentiment
         }
 
-        # Apply each prompt
-        for i, prompt in enumerate(prompts):
+        # Apply tagging prompts
+        for i, prompt in enumerate(tagging_prompts):
             try:
-                # Tagging API call
-                tag, tag_confidence = analyze_tag(comment, human_tag)
-
-                # Sentiment API call 
-                sentiment, sentiment_confidence = analyze_sentiment(comment, human_sentiment)
-
-                # Store results for this prompt
-                result[f"Prompt {i + 1} Tag"] = tag
-                result[f"Prompt {i + 1} Tag Confidence"] = tag_confidence
-                result[f"Prompt {i + 1} Sentiment"] = sentiment
-                result[f"Prompt {i + 1} Sentiment Confidence"] = sentiment_confidence
-
+                tag, tag_confidence = analyze_tag(comment, human_tag, prompt)
+                result[f"Tagging Prompt {i + 1} Tag"] = tag
+                result[f"Tagging Prompt {i + 1} Tag Confidence"] = tag_confidence
             except Exception as e:
-                print(f"Error processing comment with Prompt {i + 1}: {e}")
-                result[f"Prompt {i + 1} Tag"] = "[Error]"
-                result[f"Prompt {i + 1} Tag Confidence"] = 0.0
-                result[f"Prompt {i + 1} Sentiment"] = "[Error]"
-                result[f"Prompt {i + 1} Sentiment Confidence"] = 0.0
+                print(f"Error processing tagging with Prompt {i + 1}: {e}")
+                result[f"Tagging Prompt {i + 1} Tag"] = "[Error]"
+                result[f"Tagging Prompt {i + 1} Tag Confidence"] = 0.0
+
+        # Apply sentiment prompts
+        for i, prompt in enumerate(sentiment_prompts):
+            try:
+                sentiment, sentiment_confidence = analyze_sentiment(comment, human_sentiment, prompt)
+                result[f"Sentiment Prompt {i + 1} Sentiment"] = sentiment
+                result[f"Sentiment Prompt {i + 1} Sentiment Confidence"] = sentiment_confidence
+            except Exception as e:
+                print(f"Error processing sentiment with Prompt {i + 1}: {e}")
+                result[f"Sentiment Prompt {i + 1} Sentiment"] = "[Error]"
+                result[f"Sentiment Prompt {i + 1} Sentiment Confidence"] = 0.0
 
         # Append the results to the results list
         results.append(result)
