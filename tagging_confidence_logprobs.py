@@ -61,7 +61,7 @@ def analyze_tag(comment, human_tag):
     Tag: [Selected Tag]
     """
     try:
-        print("Calling OpenAI for sentiment analysis...")
+        print("Calling OpenAI for comment tagging...")
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",  # Or "gpt-4" if available
             messages=[{"role": "user", "content": prompt}],
@@ -113,7 +113,7 @@ def analyze_sentiment(comment):
     Confidence: [Log probability of the selected sentiment]
     """
     try:
-        print("Calling OpenAI for comment tagging...")
+        print("Calling OpenAI for sentiment analysis...")
         response = client.completions.create(
             model="gpt-3.5-turbo-instruct",
             prompt=prompt,
