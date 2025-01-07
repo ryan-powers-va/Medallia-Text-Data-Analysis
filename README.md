@@ -1,4 +1,4 @@
-## Current Benchmarks - as of 1/6
+## Current Benchmarks - as of 1/7
 
 **GPT-4**
 
