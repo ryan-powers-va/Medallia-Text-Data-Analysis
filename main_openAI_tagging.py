@@ -69,10 +69,96 @@ def analyze_tag(comment, human_tag, prompt):
         with open(cache_file_path, "r") as f:
             cached_response = json.load(f)
             return cached_response.get("tag"), cached_response.get("confidence")
+    examples = """
+    Here are some examples:
+    Comment: "This site is VERY CONFUSING! We are not IT tech savvy!"
+    Tag: Ease of use
 
+    Comment: "I was able to get a message to my primary care doctor and that was my goal"
+    Tag: Answered Question
+
+    Comment: "I came to reorder medication but didn't get an email or popup box."
+    Tag: Findability/Nav
+
+    Comment: "It is usually easier to go through the website versus making a phone call."
+    Tag: Ease of use
+
+    Comment: "The triage group was very responsive and solved my issue quickly."
+    Tag: Triage Group
+
+    Comment: "I was directed to the triage group, and they immediately connected me with the right department."
+    Tag: Triage Group
+
+    Comment: "I keep getting an error when I try to log in."
+    Tag: Error
+
+    Comment: "The error message doesn't explain what went wrong or how to fix it."
+    Tag: Error
+
+    Comment: "Everything keeps changing. Too many updates!"
+    Tag: Integration
+
+    Comment: "The system integration seems to have caused more problems than it solved."
+    Tag: Integration
+
+    Comment: "The layout is more simple this time and easier to navigate."
+    Tag: Ease of use
+
+    Comment: "I found it very easy to complete my task without any assistance."
+    Tag: Ease of use
+
+    Comment: "I appreciate the update, but I don't see how it affects me."
+    Tag: Other
+
+    Comment: "This feedback doesn't seem relevant to my experience."
+    Tag: Other
+
+    Comment: "I have feedback about something that doesn't quite fit the categories provided."
+    Tag: Other
+
+    Comment: "My concern isn't directly related to the system but more about the overall process."
+    Tag: Other
+
+    Comment: "I think there should be an option to give feedback about multiple issues at once."
+    Tag: Other
+
+    Comment: "This feedback doesnt seem like it applies to what Im experiencing, but I wanted to mention it anyway."
+    Tag: Other
+
+    Comment: "I dont see a specific tag that matches what Im trying to say here."
+    Tag: Other
+
+    Comment: "Because I asked to send a message, an early pop-up helped guide me."
+    Tag: Early Pop-Up
+
+    Comment: "The early pop-up notification helped me correct an error before submitting."
+    Tag: Early Pop-Up
+
+    Comment: "I always feel lost when trying to locate the resources I need."
+    Tag: Findability/Nav
+
+    Comment: "The drop-down menus are overly complex, and the links aren't intuitive."
+    Tag: Findability/Nav
+
+    Comment: "I couldnt figure out how to access the prescription refill area without assistance."
+    Tag: Findability/Nav
+
+    Comment: "Making sure my profile info is correct answered my question."
+    Tag: Answered Question
+
+    Comment: "I received a quick answer to my question about appointment scheduling."
+    Tag: Answered Question
+
+    Comment: "This doesnt seem to relate to my concern at all."
+    Tag: Unrelated
+
+    Comment: "The comment I provided is completely unrelated to the response I received."
+    Tag: Unrelated
+    """
     prompt = f"""
     {prompt}
     Comment: "{comment}"
+    {examples}
     Tags: {TAGS}
 
     Output format:
@@ -127,7 +213,7 @@ def analyze_sentiment(comment, human_sentiment, prompt):
     try:
         print("Calling OpenAI for sentiment analysis...")
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Or "gpt-4" if available
+            model="gpt-4",  # Or "gpt-4" if available
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0
         )
