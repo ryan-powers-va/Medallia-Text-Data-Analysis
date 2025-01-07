@@ -55,20 +55,26 @@ prompts_file = r"prompts.xlsx"
 cache_directory = r"cache"
 
 # Caching function to skip API calls if no prompt changes have occurred. 
-def get_cache_file_path(comment, task):
-    key = f"{comment}_{task}"
+def get_cache_file_path(comment, task, model, prompt):
+    key = f"{comment}_{task}_{model}_{prompt}"
     hashed_key = sha256(key.encode("utf-8")).hexdigest()
     return os.path.join(cache_directory, f"{hashed_key}.json")
 
 # Analyze tag for a comment using the openAI API. 
 def analyze_tag(comment, human_tag, prompt):
     task = "tag"
-    cache_file_path = get_cache_file_path(comment, task)
+    model = "gpt-3.5-turbo"
+    cache_file_path = get_cache_file_path(comment, task, model, prompt)
 
     if os.path.exists(cache_file_path):
         with open(cache_file_path, "r") as f:
             cached_response = json.load(f)
-            return cached_response.get("tag"), cached_response.get("confidence")
+            # Check if the cached model matches
+            if cached_response.get("model") == model:
+                return cached_response.get("tag"), cached_response.get("confidence")
+            else:
+                print(f"Cache mismatch: Model in cache is {cached_response.get('model')}, expected {model}.")
+
     examples = """
     Here are some examples:
     Comment: This site is VERY CONFUSING! We are not IT tech savvy
@@ -161,7 +167,7 @@ def analyze_tag(comment, human_tag, prompt):
     try:
         print("Calling OpenAI for comment tagging...")
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo", 
+            model=model, 
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0
         )
@@ -179,7 +185,7 @@ def analyze_tag(comment, human_tag, prompt):
 
         # Cache the response
         with open(cache_file_path, "w") as f:
-            json.dump({"tag": tag, "confidence": confidence}, f, indent=4)
+            json.dump({"model": model, "tag": tag, "confidence": confidence}, f, indent=4)
 
         return tag, confidence
     except Exception as e:
@@ -189,13 +195,17 @@ def analyze_tag(comment, human_tag, prompt):
 
 # Analyze sentiment for a comment using the openAI API. 
 def analyze_sentiment(comment, human_sentiment, prompt):
+    model = "gpt-4"
     task = "sentiment"
-    cache_file_path = get_cache_file_path(comment, task)
+    cache_file_path = get_cache_file_path(comment, task, model, prompt)
 
     if os.path.exists(cache_file_path):
         with open(cache_file_path, "r") as f:
             cached_response = json.load(f)
-            return cached_response.get("sentiment"), cached_response.get("confidence")
+            if cached_response.get("model") == model:
+                return cached_response.get("sentiment"), cached_response.get("confidence")
+            else:
+                print(f"Cache mismatch: Model in cache is {cached_response.get('model')}, expected {model}.")
 
     examples = """
     Comment: Making sure my profile information is up to date. 
@@ -208,6 +218,7 @@ def analyze_sentiment(comment, human_sentiment, prompt):
     Sentiment: Neutral
     """
     prompt = f"""
+    {examples}
     {prompt}
     Comment: "{comment}"
 
@@ -217,7 +228,7 @@ def analyze_sentiment(comment, human_sentiment, prompt):
     try:
         print("Calling OpenAI for sentiment analysis...")
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Or "gpt-4" if available
+            model=model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0
         )
@@ -235,7 +246,7 @@ def analyze_sentiment(comment, human_sentiment, prompt):
 
         # Cache the response
         with open(cache_file_path, "w") as f:
-            json.dump({"sentiment": sentiment, "confidence": confidence}, f, indent=4)
+            json.dump({"model": model, "sentiment": sentiment, "confidence": confidence}, f, indent=4)
 
         return sentiment, confidence
     except Exception as e:
