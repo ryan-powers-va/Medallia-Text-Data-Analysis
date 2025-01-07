@@ -71,89 +71,83 @@ def analyze_tag(comment, human_tag, prompt):
             return cached_response.get("tag"), cached_response.get("confidence")
     examples = """
     Here are some examples:
-    Comment: "This site is VERY CONFUSING! We are not IT tech savvy!"
+    Comment: This site is VERY CONFUSING! We are not IT tech savvy
     Tag: Ease of use
 
-    Comment: "I was able to get a message to my primary care doctor and that was my goal"
+    Comment: I was able to get a message to my primary care doctor and that was my goal
     Tag: Answered Question
 
-    Comment: "I came to reorder medication but didn't get an email or popup box."
+    Comment: I came to reorder medication but didn't get an email or popup box
     Tag: Findability/Nav
 
-    Comment: "It is usually easier to go through the website versus making a phone call."
+    Comment: It is usually easier to go through the website versus making a phone call
     Tag: Ease of use
 
-    Comment: "The triage group was very responsive and solved my issue quickly."
-    Tag: Triage Group
+    Comment: This site is VERY CONFUSING! We are not IT tech savvy
+    Tag: Ease of use
 
-    Comment: "I was directed to the triage group, and they immediately connected me with the right department."
-    Tag: Triage Group
+    Comment: Have to go through several layers to find what I need
+    Tag: Ease of use
 
-    Comment: "I keep getting an error when I try to log in."
-    Tag: Error
+    Comment: This pop-up box pops up at the beginning just after signing in
+    Tag: Early pop up
 
-    Comment: "The error message doesn't explain what went wrong or how to fix it."
-    Tag: Error
+    Comment: Because I just opened the new VA format, and you are asking for a review before I have even had a chance to see it fully
+    Tag: Early pop up
+    
+    Comment: Because I asked to send a message regarding canceling an appt due to continued reschedule of my Dental and you sent me to a Survey and now I am here performing a survey instead I should be cancelling my Dental Appt
+    Tag: Early pop up
 
-    Comment: "Everything keeps changing. Too many updates!"
+    Comment: Making sure my profile information is up to date
+    Tag: Answered Question
+
+    Comment: I was able to get a message to my primary care doctor and that was my goal
+    Tag: Answered Question
+
+    Comment: Page did not show the recent past refill request for my prescription
+    Tag: Findability/Nav
+
+    Comment: Hard to navigate
+    Tag: Findability/Nav
+
+    Comment: Everything keeps changing
     Tag: Integration
 
-    Comment: "The system integration seems to have caused more problems than it solved."
+    Comment: Too difficult to manage site as compared to previous sites
     Tag: Integration
 
-    Comment: "The layout is more simple this time and easier to navigate."
+    Comment: I cannot message my provider due to changes in the platform
+    Tag: Error
+
+    Comment: I keep receiving an error message when trying to log in
+    Tag: Error
+
+    Comment: Great service
+    Tag: Other
+
+    Comment: I am trying to contact two separate clinics and cannot
+    Tag: Other
+
+    Comment: I very much appreciate the messaging system among other features
+    Tag: Other
+
+    Comment: "Website is easy to navigate. That's all you can ask for when online
     Tag: Ease of use
 
-    Comment: "I found it very easy to complete my task without any assistance."
-    Tag: Ease of use
+    Comment: Was not able to message the person I wanted
+    Tag: Triage Group
 
-    Comment: "I appreciate the update, but I don't see how it affects me."
-    Tag: Other
+    Comment: I cannot find the mental health department under the 'teams' list
+    Tag: Triage Group
 
-    Comment: "This feedback doesn't seem relevant to my experience."
-    Tag: Other
-
-    Comment: "I have feedback about something that doesn't quite fit the categories provided."
-    Tag: Other
-
-    Comment: "My concern isn't directly related to the system but more about the overall process."
-    Tag: Other
-
-    Comment: "I think there should be an option to give feedback about multiple issues at once."
-    Tag: Other
-
-    Comment: "This feedback doesnt seem like it applies to what Im experiencing, but I wanted to mention it anyway."
-    Tag: Other
-
-    Comment: "I dont see a specific tag that matches what Im trying to say here."
-    Tag: Other
-
-    Comment: "Because I asked to send a message, an early pop-up helped guide me."
-    Tag: Early Pop-Up
-
-    Comment: "The early pop-up notification helped me correct an error before submitting."
-    Tag: Early Pop-Up
-
-    Comment: "I always feel lost when trying to locate the resources I need."
+    Comment: I always feel lost when trying to locate the resources I need
     Tag: Findability/Nav
 
-    Comment: "The drop-down menus are overly complex, and the links aren't intuitive."
+    Comment: The drop-down menus are overly complex, and the links aren't intuitive
     Tag: Findability/Nav
 
-    Comment: "I couldnt figure out how to access the prescription refill area without assistance."
+    Comment: I couldnt figure out how to access the prescription refill area without assistance
     Tag: Findability/Nav
-
-    Comment: "Making sure my profile info is correct answered my question."
-    Tag: Answered Question
-
-    Comment: "I received a quick answer to my question about appointment scheduling."
-    Tag: Answered Question
-
-    Comment: "This doesnt seem to relate to my concern at all."
-    Tag: Unrelated
-
-    Comment: "The comment I provided is completely unrelated to the response I received."
-    Tag: Unrelated
     """
     prompt = f"""
     {prompt}
@@ -167,7 +161,7 @@ def analyze_tag(comment, human_tag, prompt):
     try:
         print("Calling OpenAI for comment tagging...")
         response = client.chat.completions.create(
-            model="gpt-4", 
+            model="gpt-3.5-turbo", 
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0
         )
@@ -203,6 +197,16 @@ def analyze_sentiment(comment, human_sentiment, prompt):
             cached_response = json.load(f)
             return cached_response.get("sentiment"), cached_response.get("confidence")
 
+    examples = """
+    Comment: Making sure my profile information is up to date. 
+    Sentiment: Neutral
+
+    Comment: Access is sometimes problematic
+    Sentiment: Neutral
+
+    Comment: At times it can confusing to log in. You seem to have four different type of logins.
+    Sentiment: Neutral
+    """
     prompt = f"""
     {prompt}
     Comment: "{comment}"
@@ -213,7 +217,7 @@ def analyze_sentiment(comment, human_sentiment, prompt):
     try:
         print("Calling OpenAI for sentiment analysis...")
         response = client.chat.completions.create(
-            model="gpt-4",  # Or "gpt-4" if available
+            model="gpt-3.5-turbo",  # Or "gpt-4" if available
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0
         )
