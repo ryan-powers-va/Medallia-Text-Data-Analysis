@@ -9,24 +9,8 @@ import json
 import logging
 import shutil
 import stat
-
-# cache_directory = r"cache"
-# def force_delete_readonly(func, path, exc_info):
-#     # Change the permission and reattempt removal
-#     os.chmod(path, stat.S_IWRITE)
-#     func(path)
-
-# def clear_cache():
-#     try:
-#         # Delete directory, handling read-only files
-#         shutil.rmtree(cache_directory, onerror=force_delete_readonly)
-#         print("Cache cleared successfully.")
-#     except FileNotFoundError:
-#         print("Cache directory does not exist. Nothing to clear.")
-#     except PermissionError:
-#         print("Permission denied. Ensure the directory is not open in another program.")
-#     except Exception as e:
-#         print(f"An error occurred while clearing the cache: {e}")
+from utils import clear_cache
+from utils import get_cache_file_path
 
 # clear_cache()
 
@@ -49,16 +33,10 @@ client = openai.OpenAI(
 )
 
 # File paths
-feedback_file = r"Comments_QuickTest.xlsx"
+feedback_file = r"small_test.xlsx"
 output_file = r"output.xlsx"
 prompts_file = r"prompts.xlsx"
 cache_directory = r"cache"
-
-# Caching function to skip API calls if no prompt changes have occurred. 
-def get_cache_file_path(comment, task, model, prompt):
-    key = f"{comment}_{task}_{model}_{prompt}"
-    hashed_key = sha256(key.encode("utf-8")).hexdigest()
-    return os.path.join(cache_directory, f"{hashed_key}.json")
 
 # Analyze tag for a comment using the openAI API. 
 def analyze_tag(comment, human_tag, prompt):
@@ -69,11 +47,11 @@ def analyze_tag(comment, human_tag, prompt):
     if os.path.exists(cache_file_path):
         with open(cache_file_path, "r") as f:
             cached_response = json.load(f)
-            # Check if the cached model matches
-            if cached_response.get("model") == model:
-                return cached_response.get("tag"), cached_response.get("confidence")
-            else:
-                print(f"Cache mismatch: Model in cache is {cached_response.get('model')}, expected {model}.")
+            return (
+                cached_response.get("tag", "[Error]"),
+                cached_response.get("confidence", 0.0),
+                cached_response.get("model", "unknown")
+            )
 
     examples = """
     Here are some examples:
@@ -187,25 +165,26 @@ def analyze_tag(comment, human_tag, prompt):
         with open(cache_file_path, "w") as f:
             json.dump({"model": model, "tag": tag, "confidence": confidence}, f, indent=4)
 
-        return tag, confidence
+        return tag, confidence, model
     except Exception as e:
         print(f"Error processing tag: {e}")
         print(f"Debug: Failed to process comment: {comment}")
-        return "[Error]", 0.0  # Explicitly return "[Error]" as a placeholder tag and a confidence of 0.0
+        return "[Error]", 0.0, model
 
 # Analyze sentiment for a comment using the openAI API. 
 def analyze_sentiment(comment, human_sentiment, prompt):
-    model = "gpt-4"
+    model = "gpt-3.5-turbo"
     task = "sentiment"
     cache_file_path = get_cache_file_path(comment, task, model, prompt)
 
     if os.path.exists(cache_file_path):
         with open(cache_file_path, "r") as f:
             cached_response = json.load(f)
-            if cached_response.get("model") == model:
-                return cached_response.get("sentiment"), cached_response.get("confidence")
-            else:
-                print(f"Cache mismatch: Model in cache is {cached_response.get('model')}, expected {model}.")
+            return (
+                cached_response.get("sentiment", "[Error]"),
+                cached_response.get("confidence", 0.0),
+                cached_response.get("model", "unknown")
+            )
 
     examples = """
     Comment: Making sure my profile information is up to date. 
@@ -248,11 +227,11 @@ def analyze_sentiment(comment, human_sentiment, prompt):
         with open(cache_file_path, "w") as f:
             json.dump({"model": model, "sentiment": sentiment, "confidence": confidence}, f, indent=4)
 
-        return sentiment, confidence
+        return sentiment, confidence, model
     except Exception as e:
         print(f"Error processing sentiment: {e}")
         print(f"Debug: Failed to process comment: {comment}")
-        return "[Error]", 0.0  # Explicitly return "[Error]" as a placeholder sentiment and a confidence of 0.0
+        return "[Error]", 0.0, model
 
 def generate_output():
     # Ensure cache directory exists. If not, create one.
@@ -292,9 +271,10 @@ def generate_output():
         # Apply tagging prompts
         for i, prompt in enumerate(tagging_prompts):
             try:
-                tag, tag_confidence = analyze_tag(comment, human_tag, prompt)
+                tag, tag_confidence, tag_model = analyze_tag(comment, human_tag, prompt)
                 result[f"Tagging Prompt {i + 1} Tag"] = tag.replace('"', '').replace("'", "")
                 result[f"Tagging Prompt {i + 1} Confidence"] = tag_confidence
+                result[f"Tagging Prompt {i + 1} Model"] = tag_model
             except Exception as e:
                 print(f"Error processing tagging with Prompt {i + 1}: {e}")
                 result[f"Tagging Prompt {i + 1} Tag"] = "[Error]"
@@ -303,9 +283,10 @@ def generate_output():
         # Apply sentiment prompts
         for i, prompt in enumerate(sentiment_prompts):
             try:
-                sentiment, sentiment_confidence = analyze_sentiment(comment, human_sentiment, prompt)
+                sentiment, sentiment_confidence, sentiment_model = analyze_sentiment(comment, human_sentiment, prompt)
                 result[f"Sentiment Prompt {i + 1} Sentiment"] = sentiment.replace('"', '').replace("'", "")
                 result[f"Sentiment Prompt {i + 1} Confidence"] = sentiment_confidence
+                result[f"Sentiment Prompt {i + 1} Model"] = sentiment_model
             except Exception as e:
                 print(f"Error processing sentiment with Prompt {i + 1}: {e}")
                 result[f"Sentiment Prompt {i + 1} Sentiment"] = "[Error]"
