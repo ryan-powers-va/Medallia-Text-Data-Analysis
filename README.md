@@ -9,9 +9,9 @@
 ----
 **GPT-3.5-turbo**
 
-**Tagging:** 78.57%
+**Tagging:** 64.71%
 
-**Sentiment:** 71.43%
+**Sentiment:** 79.41%
 
 ----
-**Test sample size:** 15
+**Test sample size:** 35
