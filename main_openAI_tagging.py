@@ -1,6 +1,6 @@
-from utils import TAGS
 import openai
 import pandas as pd
+from openpyxl import load_workbook
 import os
 from dotenv import load_dotenv
 import sys
@@ -11,6 +11,7 @@ import shutil
 import stat
 from utils import clear_cache
 from utils import get_cache_file_path
+from utils import TAGS
 
 # clear_cache()
 
@@ -33,7 +34,7 @@ client = openai.OpenAI(
 )
 
 # File paths
-feedback_file = r"small_test.xlsx"
+feedback_file = r"main_test.xlsx"
 output_file = r"output.xlsx"
 prompts_file = r"prompts.xlsx"
 cache_directory = r"cache"
@@ -58,9 +59,6 @@ def analyze_tag(comment, human_tag, prompt):
     Comment: This site is VERY CONFUSING! We are not IT tech savvy
     Tag: Ease of use
 
-    Comment: I was able to get a message to my primary care doctor and that was my goal
-    Tag: Answered Question
-
     Comment: I came to reorder medication but didn't get an email or popup box
     Tag: Findability/Nav
 
@@ -82,12 +80,6 @@ def analyze_tag(comment, human_tag, prompt):
     Comment: Because I asked to send a message regarding canceling an appt due to continued reschedule of my Dental and you sent me to a Survey and now I am here performing a survey instead I should be cancelling my Dental Appt
     Tag: Early pop up
 
-    Comment: Making sure my profile information is up to date
-    Tag: Answered Question
-
-    Comment: I was able to get a message to my primary care doctor and that was my goal
-    Tag: Answered Question
-
     Comment: Page did not show the recent past refill request for my prescription
     Tag: Findability/Nav
 
@@ -99,12 +91,6 @@ def analyze_tag(comment, human_tag, prompt):
 
     Comment: Too difficult to manage site as compared to previous sites
     Tag: Integration
-
-    Comment: I cannot message my provider due to changes in the platform
-    Tag: Error
-
-    Comment: I keep receiving an error message when trying to log in
-    Tag: Error
 
     Comment: Great service
     Tag: Other
@@ -118,12 +104,6 @@ def analyze_tag(comment, human_tag, prompt):
     Comment: "Website is easy to navigate. That's all you can ask for when online
     Tag: Ease of use
 
-    Comment: Was not able to message the person I wanted
-    Tag: Triage Group
-
-    Comment: I cannot find the mental health department under the 'teams' list
-    Tag: Triage Group
-
     Comment: I always feel lost when trying to locate the resources I need
     Tag: Findability/Nav
 
@@ -134,9 +114,9 @@ def analyze_tag(comment, human_tag, prompt):
     Tag: Findability/Nav
     """
     prompt = f"""
+    {examples}
     {prompt}
     Comment: "{comment}"
-    {examples}
     Tags: {TAGS}
 
     Output format:
@@ -187,14 +167,6 @@ def analyze_sentiment(comment, human_sentiment, prompt):
             )
 
     examples = """
-    Comment: Making sure my profile information is up to date. 
-    Sentiment: Neutral
-
-    Comment: Access is sometimes problematic
-    Sentiment: Neutral
-
-    Comment: At times it can confusing to log in. You seem to have four different type of logins.
-    Sentiment: Neutral
     """
     prompt = f"""
     {examples}
@@ -300,6 +272,20 @@ def generate_output():
 
     # Save results to an output Excel file
     results_df.to_excel(output_file, index=False)
+
+    wb = load_workbook(output_file)
+    sheet = wb.active
+
+    # Formula to calculate accuracy percentage, SMALL TEST FILE. 
+    sheet["E36"] = '=COUNTIF(E2:E35, "1") / COUNTA(E2:E35)'
+    sheet["H36"] = '=COUNTIF(H2:H35, "1") / COUNTA(H2:H35)'
+
+    # LARGE TEST FILE 
+    # sheet["E130"] = '=COUNTIF(E2:E129, "1") / COUNTA(E2:E129)'
+    # sheet["H130"] = '=COUNTIF(H2:H129, "1") / COUNTA(H2:H129)'
+
+    # Save the workbook with formulas
+    wb.save(output_file)
 
     print(f"Analysis complete! Results saved to {output_file}")
 

@@ -1,5 +1,7 @@
 import os
 from hashlib import sha256
+import stat
+import shutil
 
 # Caching function to establish cache directory. 
 def get_cache_file_path(comment, task, model, prompt):
@@ -30,8 +32,12 @@ def clear_cache():
 
 # Predefined tags
 TAGS = [
-    "Triage Group", "Error", "Integration", "Ease of use", "Other", "Early pop up", "Findability/Nav", "Sign in/access", "Answered Question"
+    "Integration", "Ease of use", "Early pop up", "Findability/Nav", "Sign in/access"
 ]
+
+# TAGS = [
+#     "Triage Group", "Error", "Integration", "Ease of use", "Other", "Early pop up", "Findability/Nav", "Sign in/access", "Answered Question"
+# ]
 
 
 # TAGS = [
