@@ -28,6 +28,8 @@ def clear_cache():
     except Exception as e:
         print(f"An error occurred while clearing the cache: {e}")
 
+clear_cache()
+
 
 
 # Predefined tags

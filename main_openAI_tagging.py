@@ -34,7 +34,7 @@ client = openai.OpenAI(
 )
 
 # File paths
-feedback_file = r"main_test.xlsx"
+feedback_file = r"small_test.xlsx"
 output_file = r"output.xlsx"
 prompts_file = r"prompts.xlsx"
 cache_directory = r"cache"
