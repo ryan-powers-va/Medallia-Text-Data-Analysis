@@ -1,4 +1,4 @@
-# OpenAI-Powered Feedback Analysis
+# OpenAI-Powered Medallia Analysis
 
 ## Overview
 This project leverages OpenAI's GPT models to analyze and classify user feedback from a dataset. It automates tagging and sentiment analysis using dynamically generated prompts, caching for efficiency, and heuristic confidence scoring for results. The processed data is output to an Excel file, including accuracy calculations for evaluation.
