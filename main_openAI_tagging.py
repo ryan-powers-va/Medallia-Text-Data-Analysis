@@ -9,9 +9,9 @@ import json
 import logging
 import shutil
 import stat
-from utils import clear_cache
-from utils import get_cache_file_path
 from utils import TAGS
+from utils import get_cache_file_path
+# from utils import clear_cache
 
 # clear_cache()
 
@@ -34,10 +34,11 @@ client = openai.OpenAI(
 )
 
 # File paths
-feedback_file = r"small_test.xlsx"
+feedback_file = r"main_test.xlsx"
 output_file = r"output.xlsx"
 prompts_file = r"prompts.xlsx"
 cache_directory = r"cache"
+
 
 # Analyze tag for a comment using the openAI API. 
 def analyze_tag(comment, human_tag, prompt):
@@ -55,73 +56,47 @@ def analyze_tag(comment, human_tag, prompt):
             )
 
     examples = """
-    Here are some examples:
-    Comment: This site is VERY CONFUSING! We are not IT tech savvy
+    Here are examples of how to tag user feedback. Study these carefully:
+
+    Comment: "This site is VERY CONFUSING! We are not IT tech savvy and can't figure out how to use basic features"
     Tag: Ease of use
 
-    Comment: I came to reorder medication but didn't get an email or popup box
+    Comment: "I spent 20 minutes trying to find where to reorder my prescription. The menu structure makes no sense"
     Tag: Findability/Nav
 
-    Comment: It is usually easier to go through the website versus making a phone call
-    Tag: Ease of use
-
-    Comment: This site is VERY CONFUSING! We are not IT tech savvy
-    Tag: Ease of use
-
-    Comment: Have to go through several layers to find what I need
-    Tag: Ease of use
-
-    Comment: This pop-up box pops up at the beginning just after signing in
-    Tag: Early pop up
-
-    Comment: Because I just opened the new VA format, and you are asking for a review before I have even had a chance to see it fully
-    Tag: Early pop up
-    
-    Comment: Because I asked to send a message regarding canceling an appt due to continued reschedule of my Dental and you sent me to a Survey and now I am here performing a survey instead I should be cancelling my Dental Appt
-    Tag: Early pop up
-
-    Comment: Page did not show the recent past refill request for my prescription
-    Tag: Findability/Nav
-
-    Comment: Hard to navigate
-    Tag: Findability/Nav
-
-    Comment: Everything keeps changing
+    Comment: "Why did you change everything? The previous version was much easier to understand and use"
     Tag: Integration
 
-    Comment: Too difficult to manage site as compared to previous sites
-    Tag: Integration
+    Comment: "I just logged in and immediately got this survey. Let me use the site first!"
+    Tag: Early pop up
 
-    Comment: Great service
+    Comment: "The site works fine, no issues to report"
     Tag: Other
-
-    Comment: I am trying to contact two separate clinics and cannot
-    Tag: Other
-
-    Comment: I very much appreciate the messaging system among other features
-    Tag: Other
-
-    Comment: "Website is easy to navigate. That's all you can ask for when online
-    Tag: Ease of use
-
-    Comment: I always feel lost when trying to locate the resources I need
-    Tag: Findability/Nav
-
-    Comment: The drop-down menus are overly complex, and the links aren't intuitive
-    Tag: Findability/Nav
-
-    Comment: I couldnt figure out how to access the prescription refill area without assistance
-    Tag: Findability/Nav
     """
+
     prompt = f"""
+    You are an expert at analyzing user feedback for website usability.
+    Your task is to categorize the following comment into exactly ONE of these tags:
+    {TAGS}
+
+    Critical Guidelines:
+    1. Identify the PRIMARY issue - what is the user's main concern?
+    2. Look for explicit mentions of:
+       - Difficulty using features (Ease of use)
+       - Navigation/finding items (Findability/Nav)
+       - System changes/comparisons (Integration)
+       - Survey timing issues (Early pop up)
+    3. If multiple issues appear, determine which one receives the most emphasis
+    4. Use "Other" only when no main issue clearly fits the other categories
+
     {examples}
-    {prompt}
+
     Comment: "{comment}"
-    Tags: {TAGS}
 
     Output format:
-    Tag: Selected Tag
+    Tag: [Selected Tag]
     """
+
     try:
         print("Calling OpenAI for comment tagging...")
         response = client.chat.completions.create(
@@ -210,8 +185,8 @@ def generate_output():
     os.makedirs(cache_directory, exist_ok=True)
 
     # Load feedback data
-    feedback_df = pd.read_excel(feedback_file)  # Ensure this file has "Comment", "Human Tag", "Human Sentiment" columns
-    prompts_df = pd.read_excel(prompts_file)  # Ensure this file has a "Prompt" column
+    feedback_df = pd.read_excel(feedback_file)
+    prompts_df = pd.read_excel(prompts_file)
 
     # Ensure necessary columns are present in the feedback file
     if not {"Comment", "Human Tag", "Human Sentiment"}.issubset(feedback_df.columns):
@@ -220,14 +195,13 @@ def generate_output():
     if not {"Prompt Type", "Prompt"}.issubset(prompts_df.columns):
         raise ValueError("Prompts file must contain 'Prompt Type' and 'Prompt' columns.")
 
-    # Extract the prompts into a list
-    tagging_prompts = prompts_df[prompts_df["Prompt Type"] == "Tagging"]["Prompt"].tolist()
+    # Extract only sentiment prompts
     sentiment_prompts = prompts_df[prompts_df["Prompt Type"] == "Sentiment"]["Prompt"].tolist()
 
     # Initialize results list
     results = []
 
-    # Loop through each comment and apply each prompt
+    # Loop through each comment
     for _, row in feedback_df.iterrows():
         comment = row["Comment"]
         human_tag = row["Human Tag"]
@@ -240,19 +214,18 @@ def generate_output():
             "Human Sentiment": human_sentiment
         }
 
-        # Apply tagging prompts
-        for i, prompt in enumerate(tagging_prompts):
-            try:
-                tag, tag_confidence, tag_model = analyze_tag(comment, human_tag, prompt)
-                result[f"Tagging Prompt {i + 1} Tag"] = tag.replace('"', '').replace("'", "")
-                result[f"Tagging Prompt {i + 1} Confidence"] = tag_confidence
-                result[f"Tagging Prompt {i + 1} Model"] = tag_model
-            except Exception as e:
-                print(f"Error processing tagging with Prompt {i + 1}: {e}")
-                result[f"Tagging Prompt {i + 1} Tag"] = "[Error]"
-                result[f"Tagging Prompt {i + 1} Confidence"] = 0.0
+        # Single tagging analysis with optimized prompt
+        try:
+            tag, tag_confidence, tag_model = analyze_tag(comment, human_tag, "")  # Empty prompt as it's now built into analyze_tag
+            result["AI Tag"] = tag.replace('"', '').replace("'", "")
+            result["Tag Confidence"] = tag_confidence
+            result["Tag Model"] = tag_model
+        except Exception as e:
+            print(f"Error processing tagging: {e}")
+            result["AI Tag"] = "[Error]"
+            result["Tag Confidence"] = 0.0
 
-        # Apply sentiment prompts
+        # Apply sentiment prompts (keeping multiple prompts for sentiment)
         for i, prompt in enumerate(sentiment_prompts):
             try:
                 sentiment, sentiment_confidence, sentiment_model = analyze_sentiment(comment, human_sentiment, prompt)
@@ -276,13 +249,10 @@ def generate_output():
     wb = load_workbook(output_file)
     sheet = wb.active
 
-    # Formula to calculate accuracy percentage, SMALL TEST FILE. 
-    sheet["E36"] = '=COUNTIF(E2:E35, "1") / COUNTA(E2:E35)'
-    sheet["H36"] = '=COUNTIF(H2:H35, "1") / COUNTA(H2:H35)'
+    # Update formula to match new column structure
+    sheet["C36"] = '=COUNTIF(E2:E35, "1") / COUNTA(E2:E35)'  # Adjust column letter based on your new structure
+    sheet["F36"] = '=COUNTIF(H2:H35, "1") / COUNTA(H2:H35)'  # Adjust column letter based on your new structure
 
-    # LARGE TEST FILE 
-    # sheet["E130"] = '=COUNTIF(E2:E129, "1") / COUNTA(E2:E129)'
-    # sheet["H130"] = '=COUNTIF(H2:H129, "1") / COUNTA(H2:H129)'
 
     # Save the workbook with formulas
     wb.save(output_file)

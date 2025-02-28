@@ -16,25 +16,24 @@ def force_delete_readonly(func, path, exc_info):
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
-def clear_cache():
-    try:
-        # Delete directory, handling read-only files
-        shutil.rmtree(cache_directory, onerror=force_delete_readonly)
-        print("Cache cleared successfully.")
-    except FileNotFoundError:
-        print("Cache directory does not exist. Nothing to clear.")
-    except PermissionError:
-        print("Permission denied. Ensure the directory is not open in another program.")
-    except Exception as e:
-        print(f"An error occurred while clearing the cache: {e}")
+# def clear_cache():
+#     try:
+#         # Delete directory, handling read-only files
+#         shutil.rmtree(cache_directory, onerror=force_delete_readonly)
+#         print("Cache cleared successfully.")
+#     except FileNotFoundError:
+#         print("Cache directory does not exist. Nothing to clear.")
+#     except PermissionError:
+#         print("Permission denied. Ensure the directory is not open in another program.")
+#     except Exception as e:
+#         print(f"An error occurred while clearing the cache: {e}")
 
-clear_cache()
-
+# clear_cache()
 
 
 # Predefined tags
 TAGS = [
-    "Integration", "Ease of use", "Early pop up", "Findability/Nav", "Sign in/access"
+    "Integration", "Ease of use", "Early pop up", "Findability/Navigation", "Sign in/access"
 ]
 
 # TAGS = [
