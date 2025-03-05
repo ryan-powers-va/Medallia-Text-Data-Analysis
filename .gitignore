@@ -1,5 +1,5 @@
-# Ignore environment variables
 .env
 cache
 __pycache__
-
+*.xlsx
+*.txt
