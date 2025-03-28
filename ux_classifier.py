@@ -137,6 +137,7 @@ def analyze_ux_concern(comment):
         print(f"[UX Concern Error] {e}")
         return "Error", "Error"
 
+
 def is_similar_to_others(comment, all_comments, threshold=57, min_similar=2):
     """
     Check if a comment is semantically similar to at least `min_similar` other comments.
