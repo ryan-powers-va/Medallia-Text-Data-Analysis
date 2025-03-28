@@ -3,3 +3,10 @@ cache
 __pycache__
 *.xlsx
 *.txt
+*.xls
+*.xlsm
+*.xlsb
+*.csv
+tag_frequency.py
+tagging.py
+data/

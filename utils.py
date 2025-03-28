@@ -37,7 +37,7 @@ TAGS = [
 ]
 
 # TAGS = [
-#     "Triage Group", "Error", "Integration", "Ease of use", "Other", "Early pop up", "Findability/Nav", "Sign in/access", "Answered Question"
+#     "Error", "Integration", "Ease of use", "Other", "Early pop up", "Findability/Nav", "Sign in/access", "Answered Question"
 # ]
 
 
