@@ -7,8 +7,10 @@ __pycache__
 *.xlsm
 *.xlsb
 *.csv
+*.pth
+*.bin
+*.safetensors
 tag_frequency.py
-tagging.py
 data/
 ux_classifier_v2.py
 *.pt
@@ -16,4 +18,6 @@ ux_classifier_v2.py
 ux_classifier.py
 unlabeled_processing.py
 processing.py
+evaluate_model.py
+
 
