@@ -4,6 +4,7 @@ import os
 import json
 from dotenv import load_dotenv
 from hashlib import sha256
+import re
 
 # === Setup ===
 load_dotenv()
@@ -21,7 +22,8 @@ os.makedirs(cache_dir, exist_ok=True)
 os.makedirs(checkpoint_dir, exist_ok=True)
 
 # === Checkpoint Directory ===
-# Remove secondary_checkpoint_dir and use checkpoint_dir directly
+secondary_checkpoint_dir = os.path.join(checkpoint_dir, "secondary_tagging")
+os.makedirs(secondary_checkpoint_dir, exist_ok=True)
 
 # -----------------------------------------------------------------------------
 # 1. Utility: generic cache helpers (now store arbitrary JSON payload)
@@ -214,12 +216,12 @@ TAXONOMY = {
         ("Menu & IA", ["menu", "dropdown", "navigation bar", "breadcrumb", "mega menu", "top nav", "information architecture"]),
         ("Page Layout", ["layout", "page layout", "font", "white space", "spacing", "clutter", "too busy"]),
         ("Mobile UX", ["mobile", "tablet", "phone", "responsive", "hamburger", "small screen", "scroll on mobile"]),
-        ("Accessibility", ["screen reader", "aria", "wcag", "contrast", "keyboard nav", "tab order", "accessibility"]),
+        ("Accessibility", ["screen reader", "aria", "wcag", "contrast", "keyboard nav", "tab order"]),
     ],
     "Login & Access": [
         ("ID.me Verification", ["id.me", "id dot me", "idme", "selfie", "face match", "verify identity", "driver's license"]),
         ("Login.gov Verification", ["login.gov", "login gov", "login dot gov", "gov login", "sign‑in partner"]),
-        ("2FA / Codes", ["2fa", "two‑factor", "verification code", "security code", "sms code", "text code", "one‑time code", "otp", "authenticator", "auth"]),
+        ("2FA / Codes", ["2fa", "two‑factor", "verification code", "security code", "sms code", "text code", "one‑time code", "otp", "authenticator", "passcode"]),
         ("Password Reset", ["reset password", "forgot password", "change password", "password reset link"]),
         ("Account Lockout", ["locked out", "account locked", "too many attempts", "account disabled"]),
     ],
@@ -241,49 +243,62 @@ TAXONOMY = {
         ("Wait Time", ["800‑827", "call center", "on hold", "phone wait", "hold time", "phone line"]),
         ("Chat / Live Agent", ["chat support", "chat agent", "live chat", "virtual agent"]),
         ("Email / Online Form", ["emailed", "no response email", "contact form", "web inquiry", "support email"]),
-        ("Warm Transfer", ["transferred", "transfer call", "hung up", "dropped call", "escalate", "disconnect", "lost call"]),
         ("In‑Person Assistance", ["regional office", "vso", "in‑person", "visitor", "walk‑in"]),
     ],
 }
 
 def secondary_tag(primary: str, comment: str) -> str:
-    """Return one sub‑tag or empty string if not eligible/none matches."""
+    """
+    Return one sub-tag or empty string if primary not eligible.
+    Cleans markdown and collapses unknown labels into Other <Primary>.
+    """
     if primary not in SECONDARY_ELIGIBLE:
         return ""
 
-    # --- simple keyword pass first (fast) ---
-    c_lower = comment.lower()
+    allowed = [sub for sub, _ in TAXONOMY[primary]]
+
+    # ----- fast keyword pass -------------------------------------------------
+    c_lower = re.sub(r"[^\w\s]", " ", comment.lower())  # strip punctuation
     for sub, kws in TAXONOMY[primary]:
         if any(k in c_lower for k in kws):
             return sub
 
-    # --- fallback to LLM if keyword miss (rare) ---
-    prompt = f"""You are classifying VA.gov feedback. The primary tag is **{primary}**.
-Choose exactly one sub‑tag from this list (else say "Other {primary}"):
-{[x[0] for x in TAXONOMY[primary]]}
-Comment: "{comment}"
-Answer format:
-Sub-Tag: <name>
-"""
-    if cached := _cache_get("sub:" + prompt):
-        return cached["sub_tag"]
+    # ----- fallback LLM ------------------------------------------------------
+    prompt = (
+        f"You are classifying VA.gov feedback. The primary tag is **{primary}**.\n"
+        f"Choose exactly one sub-tag from this list (otherwise reply: Other {primary}):\n"
+        f"{allowed}\n"
+        f'Comment: "{comment}"\n'
+        "Answer format:\n"
+        "Sub-Tag: <name>"
+    )
 
-    try:
-        resp = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful tagging assistant."},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0.0,
-        )
-        out = resp.choices[0].message.content.strip()
-        sub = next((ln.split(":",1)[1].strip() for ln in out.split("\n") if ln.lower().startswith("sub-tag")), f"Other {primary}")
-        _cache_put("sub:" + prompt, {"sub_tag": sub})
-        return sub
-    except Exception as e:
-        print("Secondary tag error:", e)
-        return f"Other {primary}"
+    if cached := _cache_get("sub:" + prompt):
+        sub = cached["sub_tag"]
+    else:
+        try:
+            resp = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are a helpful tagging assistant."},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.0,
+            )
+            sub = resp.choices[0].message.content.strip()
+            _cache_put("sub:" + prompt, {"sub_tag": sub})
+        except Exception as e:
+            print("Secondary tag error:", e)
+            sub = f"Other {primary}"
+
+    # ----- sanitise & validate ----------------------------------------------
+    # remove markdown, excess whitespace
+    sub = sub.replace("*", "").strip()
+    # if the model echoed the primary label or invented one, collapse to Other
+    if sub not in allowed:
+        sub = f"Other {primary}"
+
+    return sub
 
 # -----------------------------------------------------------------------------
 # 5. Main loop (adds Secondary_Tag + Secondary_Tag_Family columns)
@@ -300,7 +315,7 @@ def save_checkpoint_csv(df, primary_tags, sentiments, sub_tags, sub_families, ch
     df_checkpoint.insert(ci + 3, "Secondary_Tag", sub_tags)
     df_checkpoint.insert(ci + 4, "Sentiment", sentiments)
 
-    checkpoint_file = os.path.join(checkpoint_dir, f"checkpoint_{checkpoint_num}.csv")
+    checkpoint_file = os.path.join(secondary_checkpoint_dir, f"secondary_checkpoint_{checkpoint_num}.csv")
     df_checkpoint.to_csv(checkpoint_file, index=False)
     print(f"\nCheckpoint saved: {checkpoint_file}")
 
