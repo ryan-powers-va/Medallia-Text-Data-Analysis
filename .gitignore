@@ -9,6 +9,7 @@ __pycache__
 *.csv
 *.pth
 *.bin
+*.png
 *.safetensors
 tag_frequency.py
 data/
@@ -21,5 +22,6 @@ processing.py
 evaluate_model.py
 OpenAI_tagging.py
 tagging.py
+analytics.py
 
 
