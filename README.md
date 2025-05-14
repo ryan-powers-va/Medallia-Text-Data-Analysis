@@ -1,65 +1,90 @@
-# OpenAI-Powered Medallia Analysis
+# VA.gov Feedback Analysis with GPT-3.5
 
 ## Overview
-This project leverages OpenAI's GPT models to analyze and classify user feedback from a dataset. It automates tagging and sentiment analysis using dynamically generated prompts, caching for efficiency, and heuristic confidence scoring for results. The processed data is output to an Excel file, including accuracy calculations for evaluation.
+This project uses OpenAI's GPT-3.5-turbo model to analyze and classify user feedback from VA.gov. The `genAI_tagging.py` script processes comments to assign primary tags, secondary tags, and sentiment analysis, with built-in caching and checkpointing for reliability.
 
 ## Features
-- **Tagging**: Automatically assigns a predefined tag to each comment based on its main topic.
-- **Sentiment Analysis**: Determines the sentiment (Positive, Neutral, or Negative) of each comment.
-- **Dynamic Prompts**: Reads tagging and sentiment instructions from a separate prompts file for flexibility.
-- **Caching**: Avoids redundant API calls by storing results for previously processed comments.
-- **Error Handling**: Logs errors and skips problematic entries to ensure smooth execution.
-- **Excel Output**: Saves processed results with accuracy formulas to an Excel file.
+- **Primary Tagging**: Assigns one of nine predefined primary tags to each comment (e.g., Login & Access, Health Care, Technical Performance)
+- **Secondary Tagging**: For eligible primary tags, assigns specific sub-tags (e.g., "Appointment Scheduling" under Health Care)
+- **Sentiment Analysis**: Classifies comments as Positive, Negative, or Neutral
+- **Caching System**: Stores API responses to avoid redundant calls and reduce costs
+- **Checkpoint System**: Saves progress every 100 rows to prevent data loss
+- **Error Handling**: Gracefully handles API errors and interruptions
 
 ## File Structure
-- main_openAI_tagging.py / main script for processing and analysis
-- prompts.xlsx / Prompts file with tagging and sentiment instructions
-- main_test.xlsx / Input dataset with user comments and human labels
-- output.xlsx / Output file with processed results
-- utils.py / Helper functions for caching and other logic
-- debug_log.txt / Debug file for tracking issues
-- cache/ - Directory for caching API results
-- .env / Environment variables, including API key. 
+```
+.
+├── genAI_tagging.py          # Main processing script
+├── training_data/           
+│   ├── A11_Comments_*.xlsx   # Input data file
+│   └── output/              # Processed results
+├── cache/                   # API response cache
+├── April_checkpoints/       # Processing checkpoints
+└── .env                     # Environment variables (API key)
+```
 
 ## Setup
 
 ### Prerequisites
-1. Python 3.8 or higher installed (don't use the latest version, I ran it with 3.11).
-2. OpenAI API key.
-3. Required Python packages:
-   - `openai`
-   - `pandas`
-   - `openpyxl`
-   - `python-dotenv`
+- Python 3.8+ (tested with 3.11)
+- OpenAI API key
+- Required packages:
+  - `openai`
+  - `pandas`
+  - `openpyxl`
+  - `python-dotenv`
 
 ### Installation
-1. Clone the repository:
+1. Install dependencies:
    ```bash
-   git clone https://github.com/your-repo-name.git
-   cd your-repo-name
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-4. Create a .env file in the project root:
-   ```bash
+   pip install openai pandas openpyxl python-dotenv
+   ```
+
+2. Create a `.env` file:
+   ```
    OPENAI_API_KEY=your_openai_api_key
-6. Set up cache directory:
+   ```
+
+3. Create required directories:
    ```bash
-   mkdir cache
-## Current Benchmarks - as of 1/7
+   mkdir cache April_checkpoints
+   ```
 
-**GPT-4**
+## Usage
+1. Place your input Excel file in the `training_data` directory
+2. Update the input/output file paths in `genAI_tagging.py` if needed
+3. Run the script:
+   ```bash
+   python genAI_tagging.py
+   ```
 
-**Tagging:** 57.14%
+## Tag Categories
 
-**Sentiment:** 85.71%
+### Primary Tags
+1. Login & Access
+2. Navigation & Usability
+3. Disability Claims
+4. Health Care
+5. Technical Performance
+6. Benefits (Non-Health Care)
+7. Customer Support / Contact
+8. Positive Feedback - General
+9. Other / Unclear
 
-----
-**GPT-3.5-turbo**
+### Secondary Tags
+Available for most primary tags, providing more specific categorization. For example:
+- Health Care: Appointment Scheduling, Rx Refill, Secure Messaging, etc.
+- Technical Performance: HTTP Errors, Timeout/Spinning, Crash/Blank, etc.
+- Login & Access: ID.me Verification, Login.gov Verification, 2FA/Codes, etc.
 
-**Tagging:** 64.71%
+## Performance
+- Uses GPT-3.5-turbo for all classifications, cheapest. Other models are available as required
+- Implements caching to reduce API calls
+- Saves checkpoints every 100 rows, can change checkpoint interval as required
+- Handles interruptions gracefully, allowing resume from last checkpoint
 
-**Sentiment:** 79.41%
-
-----
-**Test sample size:** 35
+## Notes
+- The script includes detailed tagging rules and keyword lists for accurate classification
+- Comments are processed sequentially with progress tracking
+- Empty or whitespace-only comments are skipped
+- All API responses are cached to improve performance and reduce costs
