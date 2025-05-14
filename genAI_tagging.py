@@ -13,10 +13,10 @@ if not api_key:
 client = openai.OpenAI(api_key=api_key)
 
 # === Paths & dirs ===
-input_file = "training_data/Unlabeled_Cleaned.xlsx"
-output_file = "training_data/output/Tagged_Comments_Output.xlsx"
+input_file = "training_data/A11_Comments_Apr2025_cleaned.xlsx"
+output_file = "training_data/output/Apr2025_Tagged.xlsx"
 cache_dir = "cache"
-checkpoint_dir = "checkpoints"
+checkpoint_dir = "April_checkpoints"
 os.makedirs(cache_dir, exist_ok=True)
 os.makedirs(checkpoint_dir, exist_ok=True)
 
@@ -92,7 +92,7 @@ Tagging ground-rules
 6. Benefits first: if the topic is disability compensation, GI Bill, home loan, pension, burial, or other VA benefit → tag that benefit area according to the primary tag options, not Navigation.
 7. Support first: if the main issue is phone/chat/email wait-time or agent quality → **Customer Support / Contact**.
 8. **Navigation & Usability** is only for site-wide way-finding or layout feedback when **no single feature** dominates.
-9. **Positive – General** is only for broad praise with **no feature mentioned** (“Great site—thank you!”).  
+9. **Positive Feedback – General** is only for broad praise with **no feature mentioned** (“Great site—thank you!”).  
    – If praise names a feature (“Easy to schedule my appointment”) tag the feature (e.g. appointments would be > Healthcare), not Positive Feedback.
 10. If the comment is too short, off-topic, or nonsensical → **Other / Unclear**.
 
@@ -101,12 +101,12 @@ Tagging ground-rules
 
 1. Login & Access  
 Problems signing in, verifying identity, or accessing an account. Includes ID.me and Login.gov issues.  
-Keywords: login, log in, sign in, sign-on, logged out, ID.me, idme, Login.gov, logingov, verify identity, verification code, two-factor, authentication, reauth, password reset, can’t access account, credentials  
+Keywords: login, log in, sign in, sign-on, logged out, ID.me, idme, Login.gov, logingov, verify identity, verification code, two-factor, authentication, reauth, password reset, can't access account, credentials  
 
 2. Navigation & Usability  
 Difficulty finding information, navigating menus, or completing tasks due to layout or design.  
-Includes both positive and negative feedback about the site’s usability.  
-Keywords: couldn’t find, can’t find, hard to locate, navigation, menu, breadcrumb, search bar, site map, too many steps, loop back, confusing, layout, where do I, scroll, tab order, drop-down, button placement, UX, UI, mobile menu, tablet view, font size  
+Includes both positive and negative feedback about the site's usability.  
+Keywords: couldn't find, can't find, hard to locate, navigation, menu, breadcrumb, search bar, site map, too many steps, loop back, confusing, layout, where do I, scroll, tab order, drop-down, button placement, UX, UI, mobile menu, tablet view, font size  
 
 3. Disability Claims  
 Issues related to VA disability claims, including status, ratings, compensation, eligibility, applications, appeals, supplemental claims, or delays.  
@@ -129,13 +129,13 @@ Keywords: GI Bill, Post-9/11, COE, home loan, certificate of eligibility, chap 3
 Trouble reaching support by phone, email, or chat. Includes long wait times, no response, or unhelpful service.  
 Keywords: call center, 800-827-1000, hold for, wait time, no one answered, transferred, hung up, phone lines busy, chat support, agent, emailed, no response, help desk, support ticket, contact us, escalate, representative  
 
-8. Positive Feedback
+8. Positive Feedback - General
 Clear praise for VA.gov, its tools, or staff. Only use for general positive feedback not tied to a specific feature.  
 Keywords: great job, thank you, easy, quick, love the site, awesome, worked perfectly, smooth, no issues, appreciate, kudos, excellent, user-friendly, very helpful  
 
 9. Other / Unclear  
-Vague, unrelated, or non-actionable feedback. Includes off-topic or placeholder comments like “just checking in.”  
-Keywords: testing, n/a, none, just checking, blank, “.” (single period), emojis only, spam URL, unrelated politics, incoherent text
+Vague, unrelated, or non-actionable feedback. Includes off-topic or placeholder comments like "just checking in."  
+Keywords: testing, n/a, none, just checking, blank, "." (single period), emojis only, spam URL, unrelated politics, incoherent text
 
 
 ---
@@ -308,10 +308,11 @@ def run():
     print("\n=== Tagging Process (Primary + Secondary) ===")
     df = pd.read_excel(input_file)
     df["Comment_Cleaned"] = df["Comment_Cleaned"].fillna("").astype(str)
-    print(f"Loaded {len(df)} rows")
+    total_rows = len(df)
+    print(f"Loaded {total_rows} rows")
 
     primary_tags, sentiments, sub_tags, sub_families = [], [], [], []
-    checkpoint_size = 50  # Save checkpoint every 50 rows
+    checkpoint_size = 100  # Save checkpoint every 100 rows
     checkpoint_num = 0
 
     try:
@@ -333,14 +334,24 @@ def run():
             sub_tags.append(sub)
             sub_families.append(fam)
 
+            # Print progress bar
+            progress = (i + 1) / total_rows
+            bar_length = 30
+            filled_length = int(bar_length * progress)
+            bar = '█' * filled_length + '░' * (bar_length - filled_length)
+            print(f'\rProgress: [{bar}] {i+1}/{total_rows} ({progress:.1%})', end='')
+
             # Save checkpoint every `checkpoint_size` rows
             if (i + 1) % checkpoint_size == 0:
                 checkpoint_num += 1
                 save_checkpoint_csv(df, primary_tags, sentiments, sub_tags, sub_families, checkpoint_num)
-                print(f"Progress: [{i + 1}/{len(df)}]", end="\r")
+                print(f"\nCheckpoint {checkpoint_num} saved")
+
+        print("\n")  # New line after progress bar
 
     except KeyboardInterrupt:
         print("\n\n=== Processing Interrupted ===")
+        print(f"Last processed row: {i+1}/{total_rows} ({(i+1)/total_rows:.1%})")
         print("Saving final checkpoint...")
         checkpoint_num += 1
         save_checkpoint_csv(df, primary_tags, sentiments, sub_tags, sub_families, checkpoint_num)
