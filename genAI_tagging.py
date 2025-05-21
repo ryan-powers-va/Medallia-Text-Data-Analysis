@@ -44,7 +44,7 @@ def _cache_put(text: str, payload: dict, model: str = "gpt-3.5-turbo"):
         json.dump(payload, f, indent=2)
 
 # -----------------------------------------------------------------------------
-# 2. Sentiment (unchanged)
+# 2. Sentiment
 # -----------------------------------------------------------------------------
 
 def analyze_sentiment(comment: str) -> str:
@@ -76,7 +76,7 @@ Sentiment: <word>
         return "Error"
 
 # -----------------------------------------------------------------------------
-# 3. Primary‑tag prompt (unchanged except we return only primary)
+# 3. Primary‑tag prompt
 # -----------------------------------------------------------------------------
 def build_prompt(comment):
     return f"""
@@ -179,7 +179,7 @@ def tag_comment(comment: str) -> str:
         print("Primary-tag error:", e)
         return "[Error]"
 # -----------------------------------------------------------------------------
-# 4. Secondary‑tag logic
+# 4. Secondary‑tag
 # -----------------------------------------------------------------------------
 SECONDARY_ELIGIBLE = {
     "Health Care",
@@ -286,7 +286,7 @@ Sub-Tag: <name>
         return f"Other {primary}"
 
 # -----------------------------------------------------------------------------
-# 5. Main loop (adds Secondary_Tag + Secondary_Tag_Family columns)
+# 5. Main loop
 # -----------------------------------------------------------------------------
 
 def save_checkpoint_csv(df, primary_tags, sentiments, sub_tags, sub_families, checkpoint_num):
