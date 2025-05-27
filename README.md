@@ -3,6 +3,8 @@
 ## Overview
 This project uses OpenAI's GPT-3.5-turbo model to analyze and classify user feedback from VA.gov. The `genAI_tagging.py` script processes comments to assign primary tags, secondary tags, and sentiment analysis, with built-in caching and checkpointing for reliability.
 
+#### NOTE: The "secondary tag" functionality is still a work in progress and has accuracy issues. 
+
 ## Features
 - **Primary Tagging**: Assigns one of nine predefined primary tags to each comment (e.g., Login & Access, Health Care, Technical Performance)
 - **Secondary Tagging**: For eligible primary tags, assigns specific sub-tags (e.g., "Appointment Scheduling" under Health Care)
